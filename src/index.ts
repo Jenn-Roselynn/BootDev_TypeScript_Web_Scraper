@@ -1,4 +1,4 @@
-import { crawlPage } from "./crawl.js";
+import { crawlSiteAsync } from "./crawl.js";
 
 async function main() {
   if (process.argv.length < 3) {
@@ -13,7 +13,7 @@ async function main() {
   const baseURL = process.argv[2];
   console.log(`starting crawl of: ${baseURL}`);
 
-  const pages = await crawlPage(baseURL);
+  const pages = await crawlSiteAsync(baseURL);
 
   console.log("--- crawl complete ---");
   for (const page of Object.entries(pages)) {
