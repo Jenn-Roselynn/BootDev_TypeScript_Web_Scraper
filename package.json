@@ -1,0 +1,27 @@
+{
+  "name": "bootdev_typescript_web_scraper",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "tsx ./src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jenn-Roselynn/BootDev_TypeScript_Web_Scraper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jenn-Roselynn/BootDev_TypeScript_Web_Scraper/issues"
+  },
+  "homepage": "https://github.com/Jenn-Roselynn/BootDev_TypeScript_Web_Scraper#readme",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}
