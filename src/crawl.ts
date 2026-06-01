@@ -8,6 +8,46 @@ export interface ExtractedPageData {
   image_urls: string[];
 }
 
+export async function crawlPage(
+  baseURL: string,
+  currentURL: string = baseURL,
+  pages: Record<string, number> = {}
+): Promise<Record<string, number>> {
+  const baseURLObj = new URL(baseURL);
+  const currentURLObj = new URL(currentURL);
+
+  // 1. Check if the current URL is on the same domain
+  if (baseURLObj.hostname !== currentURLObj.hostname) {
+    return pages;
+  }
+
+  // 2. Get normalized current URL
+  const normalizedCurrentURL = normalizeURL(currentURL);
+
+  // 3. Increment count if already visited, or set to 1
+  if (pages[normalizedCurrentURL] > 0) {
+    pages[normalizedCurrentURL]++;
+    return pages;
+  }
+
+  pages[normalizedCurrentURL] = 1;
+  console.log(`crawling: ${currentURL}`);
+
+  // 4. Fetch HTML
+  const html = await getHTML(currentURL);
+  if (!html) {
+    return pages;
+  }
+
+  // 5. Recursively crawl links
+  const nextURLs = getURLsFromHTML(html, baseURL);
+  for (const nextURL of nextURLs) {
+    pages = await crawlPage(baseURL, nextURL, pages);
+  }
+
+  return pages;
+}
+
 export async function getHTML(url: string): Promise<string | undefined> {
   try {
     const response = await fetch(url, {
