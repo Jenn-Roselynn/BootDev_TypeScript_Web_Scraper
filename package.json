@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx ./src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "repository": {
     "type": "git",
@@ -20,8 +20,15 @@
   "homepage": "https://github.com/Jenn-Roselynn/BootDev_TypeScript_Web_Scraper#readme",
   "description": "",
   "devDependencies": {
+    "@types/jsdom": "^28.0.3",
     "@types/node": "^25.9.1",
     "tsx": "^4.22.4",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0-rc.12",
+    "jsdom": "^24.1.3"
   }
 }
