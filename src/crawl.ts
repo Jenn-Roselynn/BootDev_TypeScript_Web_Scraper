@@ -8,6 +8,33 @@ export interface ExtractedPageData {
   image_urls: string[];
 }
 
+export async function getHTML(url: string): Promise<string | undefined> {
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "BootCrawler/1.0",
+      },
+    });
+
+    if (response.status >= 400) {
+      console.error(`Error: Received HTTP status code ${response.status}`);
+      return;
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("text/html")) {
+      console.error(`Error: Expected text/html, but received ${contentType}`);
+      return;
+    }
+
+    return await response.text();
+  } catch (err) {
+    console.error(`Error: Failed to fetch ${url}: ${err}`);
+    return;
+  }
+}
+
 export function normalizeURL(urlString: string): string {
   const urlObj = new URL(urlString);
   const hostPath = `${urlObj.hostname}${urlObj.pathname}`;
@@ -47,7 +74,6 @@ export function getURLsFromHTML(html: string, baseURL: string): string[] {
 
   for (const aElement of anchorElements) {
     if (aElement.href.startsWith("/")) {
-      // Relative URL
       try {
         const urlObj = new URL(aElement.href, baseURL);
         urls.push(urlObj.href);
@@ -55,7 +81,6 @@ export function getURLsFromHTML(html: string, baseURL: string): string[] {
         console.error(`Error with relative url: ${err}`);
       }
     } else {
-      // Absolute URL
       try {
         const urlObj = new URL(aElement.href);
         urls.push(urlObj.href);
