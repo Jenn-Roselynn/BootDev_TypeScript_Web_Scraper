@@ -11,7 +11,7 @@ export interface ExtractedPageData {
 
 export class ConcurrentCrawler {
   private baseURL: string;
-  private pages: Record<string, number>;
+  private pages: Record<string, ExtractedPageData>;
   private limit: Limit;
   private maxPages: number;
   private shouldStop: boolean = false;
@@ -24,12 +24,11 @@ export class ConcurrentCrawler {
     this.maxPages = maxPages;
   }
 
-  private addPageVisit(normalizedURL: string): boolean {
+  private addPageVisit(normalizedURL: string, data: ExtractedPageData): boolean {
     if (this.shouldStop) {
       return false;
     }
-    if (this.pages[normalizedURL] > 0) {
-      this.pages[normalizedURL]++;
+    if (this.pages[normalizedURL]) {
       return false;
     }
     if (Object.keys(this.pages).length >= this.maxPages) {
@@ -37,7 +36,7 @@ export class ConcurrentCrawler {
       console.log("Reached maximum number of pages to crawl.");
       return false;
     }
-    this.pages[normalizedURL] = 1;
+    this.pages[normalizedURL] = data;
     return true;
   }
 
@@ -80,11 +79,6 @@ export class ConcurrentCrawler {
     }
 
     const normalized = normalizeURL(currentURL);
-    if (!this.addPageVisit(normalized)) {
-      return;
-    }
-
-    console.log(`crawling: ${currentURL}`);
 
     let html: string;
     try {
@@ -94,8 +88,14 @@ export class ConcurrentCrawler {
       return;
     }
 
-    const nextURLs = getURLsFromHTML(html, this.baseURL);
-    const promises = nextURLs.map((url) => {
+    const data = extractPageData(html, currentURL);
+    if (!this.addPageVisit(normalized, data)) {
+      return;
+    }
+
+    console.log(`crawling: ${currentURL}`);
+
+    const promises = data.outgoing_links.map((url) => {
       const task = this.crawlPage(url);
       this.allTasks.add(task);
       return task.finally(() => this.allTasks.delete(task));
@@ -104,7 +104,7 @@ export class ConcurrentCrawler {
     await Promise.all(promises);
   }
 
-  async crawl(): Promise<Record<string, number>> {
+  async crawl(): Promise<Record<string, ExtractedPageData>> {
     const task = this.crawlPage(this.baseURL);
     this.allTasks.add(task);
     await task.finally(() => this.allTasks.delete(task));
@@ -112,20 +112,22 @@ export class ConcurrentCrawler {
   }
 }
 
-export async function crawlSiteAsync(baseURL: string, maxConcurrency: number, maxPages: number): Promise<Record<string, number>> {
+export async function crawlSiteAsync(baseURL: string, maxConcurrency: number, maxPages: number): Promise<Record<string, ExtractedPageData>> {
   const crawler = new ConcurrentCrawler(baseURL, maxConcurrency, maxPages);
   return await crawler.crawl();
 }
 
 export function normalizeURL(urlString: string): string {
-  const urlObj = new URL(urlString);
-  const hostPath = `${urlObj.hostname}${urlObj.pathname}`;
-  
-  if (hostPath.length > 0 && hostPath.endsWith('/')) {
-    return hostPath.slice(0, -1);
+  try {
+    const urlObj = new URL(urlString);
+    const hostPath = `${urlObj.hostname}${urlObj.pathname}`;
+    if (hostPath.length > 0 && hostPath.endsWith('/')) {
+      return hostPath.slice(0, -1);
+    }
+    return hostPath;
+  } catch (err) {
+    return "";
   }
-  
-  return hostPath;
 }
 
 export function getHeadingFromHTML(html: string): string {
@@ -155,20 +157,11 @@ export function getURLsFromHTML(html: string, baseURL: string): string[] {
   const urls: string[] = [];
 
   for (const aElement of anchorElements) {
-    if (aElement.href.startsWith("/")) {
-      try {
-        const urlObj = new URL(aElement.href, baseURL);
-        urls.push(urlObj.href);
-      } catch (err) {
-        console.error(`Error with relative url: ${err}`);
-      }
-    } else {
-      try {
-        const urlObj = new URL(aElement.href);
-        urls.push(urlObj.href);
-      } catch (err) {
-        console.error(`Error with absolute url: ${err}`);
-      }
+    try {
+      const urlObj = new URL(aElement.href, baseURL);
+      urls.push(urlObj.href);
+    } catch (err) {
+      // Silently ignore invalid URLs
     }
   }
   return urls;
@@ -186,7 +179,7 @@ export function getImagesFromHTML(html: string, baseURL: string): string[] {
         const urlObj = new URL(src, baseURL);
         images.push(urlObj.href);
       } catch (err) {
-        console.error(`Error with image url: ${err}`);
+        // Silently ignore invalid image URLs
       }
     }
   }
