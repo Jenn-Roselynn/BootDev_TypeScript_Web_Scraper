@@ -4,7 +4,6 @@ export function normalizeURL(urlString: string): string {
   const urlObj = new URL(urlString);
   const hostPath = `${urlObj.hostname}${urlObj.pathname}`;
   
-  // If the path ends in a slash, we want to strip it off
   if (hostPath.length > 0 && hostPath.endsWith('/')) {
     return hostPath.slice(0, -1);
   }
@@ -24,13 +23,57 @@ export function getFirstParagraphFromHTML(html: string): string {
   const dom = new JSDOM(html);
   const document = dom.window.document;
   
-  // Try to find the first <p> inside <main> first
   const mainP = document.querySelector("main p");
   if (mainP) {
     return mainP.textContent || "";
   }
   
-  // Fallback to any first <p>
   const firstP = document.querySelector("p");
   return firstP?.textContent || "";
+}
+
+export function getURLsFromHTML(html: string, baseURL: string): string[] {
+  const dom = new JSDOM(html);
+  const anchorElements = dom.window.document.querySelectorAll("a");
+  const urls: string[] = [];
+
+  for (const aElement of anchorElements) {
+    if (aElement.href.startsWith("/")) {
+      // Relative URL
+      try {
+        const urlObj = new URL(aElement.href, baseURL);
+        urls.push(urlObj.href);
+      } catch (err) {
+        console.error(`Error with relative url: ${err}`);
+      }
+    } else {
+      // Absolute URL
+      try {
+        const urlObj = new URL(aElement.href);
+        urls.push(urlObj.href);
+      } catch (err) {
+        console.error(`Error with absolute url: ${err}`);
+      }
+    }
+  }
+  return urls;
+}
+
+export function getImagesFromHTML(html: string, baseURL: string): string[] {
+  const dom = new JSDOM(html);
+  const imgElements = dom.window.document.querySelectorAll("img");
+  const images: string[] = [];
+
+  for (const imgElement of imgElements) {
+    const src = imgElement.src;
+    if (src) {
+      try {
+        const urlObj = new URL(src, baseURL);
+        images.push(urlObj.href);
+      } catch (err) {
+        console.error(`Error with image url: ${err}`);
+      }
+    }
+  }
+  return images;
 }

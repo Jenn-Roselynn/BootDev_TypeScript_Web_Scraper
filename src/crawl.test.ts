@@ -1,7 +1,13 @@
 import { expect, test } from 'vitest';
-import { normalizeURL } from './crawl';
-import { getHeadingFromHTML, getFirstParagraphFromHTML } from './crawl';
+import { 
+  normalizeURL, 
+  getHeadingFromHTML, 
+  getFirstParagraphFromHTML, 
+  getURLsFromHTML, 
+  getImagesFromHTML 
+} from './crawl';
 
+// --- Normalization Tests ---
 test('normalizeURL strip protocol', () => {
   const input = 'https://blog.boot.dev/path';
   const actual = normalizeURL(input);
@@ -23,6 +29,7 @@ test('normalizeURL capitals', () => {
   expect(actual).toBe(expected);
 });
 
+// --- HTML Parsing Tests ---
 test('getHeadingFromHTML basic', () => {
   const inputBody = `<html><body><h1>Test Title</h1></body></html>`;
   expect(getHeadingFromHTML(inputBody)).toBe("Test Title");
@@ -56,4 +63,80 @@ test('getFirstParagraphFromHTML fallback to first p', () => {
 
 test('getFirstParagraphFromHTML empty', () => {
   expect(getFirstParagraphFromHTML("<html><body></body></html>")).toBe("");
+});
+
+// --- Link Extraction Tests ---
+test("getURLsFromHTML absolute", () => {
+  const inputURL = "https://crawler-test.com";
+  const inputBody = `<html><body><a href="https://crawler-test.com/path/one"><span>Boot.dev</span></a></body></html>`;
+
+  const actual = getURLsFromHTML(inputBody, inputURL);
+  const expected = ["https://crawler-test.com/path/one"];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getURLsFromHTML relative", () => {
+  const inputURL = "https://crawler-test.com";
+  const inputBody = `<html><body><a href="/path/one"><span>Boot.dev</span></a></body></html>`;
+
+  const actual = getURLsFromHTML(inputBody, inputURL);
+  const expected = ["https://crawler-test.com/path/one"];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getURLsFromHTML multiple", () => {
+  const inputURL = "https://crawler-test.com";
+  const inputBody = `
+    <html>
+      <body>
+        <a href="/path/one">Link One</a>
+        <a href="https://other.com/path/two">Link Two</a>
+      </body>
+    </html>
+  `;
+
+  const actual = getURLsFromHTML(inputBody, inputURL);
+  const expected = ["https://crawler-test.com/path/one", "https://other.com/path/two"];
+
+  expect(actual).toEqual(expected);
+});
+
+// --- Image Extraction Tests ---
+test("getImagesFromHTML relative", () => {
+  const inputURL = "https://crawler-test.com";
+  const inputBody = `<html><body><img src="/logo.png" alt="Logo"></body></html>`;
+
+  const actual = getImagesFromHTML(inputBody, inputURL);
+  const expected = ["https://crawler-test.com/logo.png"];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getImagesFromHTML multiple", () => {
+  const inputURL = "https://crawler-test.com";
+  const inputBody = `
+    <html>
+      <body>
+        <img src="/logo.png" alt="Logo">
+        <img src="https://other.com/photo.jpg" alt="Photo">
+      </body>
+    </html>
+  `;
+
+  const actual = getImagesFromHTML(inputBody, inputURL);
+  const expected = ["https://crawler-test.com/logo.png", "https://other.com/photo.jpg"];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getImagesFromHTML missing src", () => {
+  const inputURL = "https://crawler-test.com";
+  const inputBody = `<html><body><img alt="No source here"></body></html>`;
+
+  const actual = getImagesFromHTML(inputBody, inputURL);
+  const expected: string[] = [];
+
+  expect(actual).toEqual(expected);
 });
