@@ -4,8 +4,32 @@ import {
   getHeadingFromHTML, 
   getFirstParagraphFromHTML, 
   getURLsFromHTML, 
-  getImagesFromHTML 
+  getImagesFromHTML,
+  extractPageData
 } from './crawl';
+
+test("extractPageData basic", () => {
+  const inputURL = "https://crawler-test.com";
+  const inputBody = `
+    <html><body>
+      <h1>Test Title</h1>
+      <p>This is the first paragraph.</p>
+      <a href="/link1">Link 1</a>
+      <img src="/image1.jpg" alt="Image 1">
+    </body></html>
+  `;
+
+  const actual = extractPageData(inputBody, inputURL);
+  const expected = {
+    url: "https://crawler-test.com",
+    heading: "Test Title",
+    first_paragraph: "This is the first paragraph.",
+    outgoing_links: ["https://crawler-test.com/link1"],
+    image_urls: ["https://crawler-test.com/image1.jpg"],
+  };
+
+  expect(actual).toEqual(expected);
+});
 
 // --- Normalization Tests ---
 test('normalizeURL strip protocol', () => {

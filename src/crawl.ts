@@ -1,5 +1,13 @@
 import { JSDOM } from "jsdom";
 
+export interface ExtractedPageData {
+  url: string;
+  heading: string;
+  first_paragraph: string;
+  outgoing_links: string[];
+  image_urls: string[];
+}
+
 export function normalizeURL(urlString: string): string {
   const urlObj = new URL(urlString);
   const hostPath = `${urlObj.hostname}${urlObj.pathname}`;
@@ -76,4 +84,14 @@ export function getImagesFromHTML(html: string, baseURL: string): string[] {
     }
   }
   return images;
+}
+
+export function extractPageData(html: string, pageURL: string): ExtractedPageData {
+  return {
+    url: pageURL,
+    heading: getHeadingFromHTML(html),
+    first_paragraph: getFirstParagraphFromHTML(html),
+    outgoing_links: getURLsFromHTML(html, pageURL),
+    image_urls: getImagesFromHTML(html, pageURL),
+  };
 }
